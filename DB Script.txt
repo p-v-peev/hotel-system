@@ -1,0 +1,121 @@
+DROP DATABASE IF EXISTS hotel;
+
+CREATE DATABASE hotel;
+
+USE hotel;
+
+CREATE TABLE clients
+(
+personaIdentificationNumber NVARCHAR(10) PRIMARY KEY,
+firstName NVARCHAR(15),
+lastName NVARCHAR(15)
+)ENGINE = InnoDB;
+
+CREATE TABLE employees
+(
+id INT AUTO_INCREMENT PRIMARY KEY,
+firstName NVARCHAR(15),
+password NVARCHAR(25),
+lastName NVARCHAR(15)
+)ENGINE = InnoDB;
+
+CREATE TABLE rooms
+(
+roomNumber INT PRIMARY KEY,
+type NVARCHAR(100),
+numberOfBeds TINYINT,
+outLook NVARCHAR(300),
+pricePerNight SMALLINT,
+isFree NVARCHAR(5)
+)ENGINE = InnoDB;
+
+
+CREATE TABLE roomhistory
+(
+roomNumber INT,
+fromDate DATE,
+toDate DATE,
+clientNumber NVARCHAR(10),
+employeeID INT,
+PRIMARY KEY (roomNumber, fromDate, toDate),
+FOREIGN KEY (roomNumber) REFERENCES rooms(roomNumber)
+ON DELETE CASCADE,
+FOREIGN KEY (clientNumber) REFERENCES clients(personaIdentificationNumber)
+ON DELETE CASCADE,
+FOREIGN KEY (employeeID) REFERENCES employees(id)
+ON DELETE CASCADE
+)ENGINE = InnoDB;
+
+DELIMITER //
+CREATE PROCEDURE chaeck_for_employee
+(IN employee_name NVARCHAR(15), IN employee_pass NVARCHAR(25), OUT employee_id INTEGER)
+BEGIN
+ SELECT id INTO employee_id FROM employees
+  WHERE firstName = employee_name AND password = employee_pass;
+END //
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE find_free_room
+(IN room_type NVARCHAR(20), IN room_price INT, IN room_view NVARCHAR(10))
+BEGIN
+ SELECT * FROM rooms
+  WHERE rooms.type = room_type AND rooms.pricePerNight <= room_price AND rooms.outLook = room_view AND rooms.isFree = 'true';
+END //
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE reserve_room
+(IN room_number INT)
+BEGIN
+UPDATE rooms
+SET rooms.isFree = 'false'
+WHERE rooms.roomNumber = room_number;
+END //
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE free_room
+(IN room_number INT)
+BEGIN
+UPDATE rooms
+SET rooms.isFree = 'true'
+WHERE rooms.roomNumber = room_number;
+END //
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE check_for_room
+(IN room_number INT, OUT finded_room_number INT)
+BEGIN
+SELECT rooms.roomNumber INTO finded_room_number FROM rooms
+WHERE rooms.roomNumber = room_number;
+END //
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE add_to_room_history
+(IN room_number INT, IN last_date DATE, IN client_number NVARCHAR(10), IN empliyee_id INT)
+BEGIN
+INSERT INTO roomhistory(roomNumber,fromDate, toDate, clientNumber, employeeID)
+VALUES(room_number, CURDATE(), last_date, client_number, empliyee_id);
+END //
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE check_for_client
+(IN client_pin NVARCHAR(10), OUT finded_pin NVARCHAR(10))
+BEGIN
+SELECT personaIdentificationNumber INTO finded_pin FROM clients
+WHERE personaIdentificationNumber = client_pin;
+END //
+DELIMITER ;
+
+DELIMITER //
+CREATE PROCEDURE add_client
+(IN client_pin NVARCHAR(10), IN client_first_name NVARCHAR(15), IN client_last_name NVARCHAR(15))
+BEGIN
+INSERT INTO clients(personaIdentificationNumber, firstName, lastName)
+VALUES(client_pin, client_first_name, client_last_name);
+END //
+DELIMITER ;
